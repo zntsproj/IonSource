@@ -6,7 +6,8 @@
 #include <time.h>
 #include <i2c/i2c.c>
 #include <keyboard/keyboard.c>
-#include "rtl8188eu.h" 
+#include "rtl8188eu.h"
+#include "create_dir.h" // Include the header for directory creation
 
 // Default password
 #define DEFAULT_PASSWORD "root"
@@ -42,6 +43,7 @@ void interactive_text() {
 
 void print_welcome() {
     printf("\033[33mIon Terminal 1.05 Stable - type help for basic commands\033[0m\n");
+    printf("\033[1;35mSupport Ion on Open Collective: https://opencollective.com/ion-kernel\033[0m\n");
 }
 
 void get_current_time(char *buffer, size_t size) {
@@ -61,6 +63,7 @@ void handle_help() {
     printf("  sysinfo - shows the system information\n");
     printf("  wlsctl --help - Show supported Wi-Fi cards\n");
     printf("  rtl -c <SSID> <Password> - Connect to Wi-Fi using rtl8188eu\n");
+    printf("  mkdir <dir_name> - Create a new directory\n"); // Added the new command description
 }
 
 /**
@@ -128,6 +131,24 @@ void handle_rtl_connect(const char *input) {
     }
 }
 
+/**
+ * Handles the "mkdir" command by creating a directory.
+ */
+void handle_mkdir(const char *input) {
+    const char *dir_name = input + 6; // Skip "mkdir " part
+    if (strlen(dir_name) == 0) {
+        printf("Invalid syntax! Use: mkdir <dir_name>\n");
+        return;
+    }
+
+    int result = create_dir(dir_name); // Call the create_dir function to create the directory
+    if (result == 0) {
+        printf("Directory '%s' created successfully.\n", dir_name); // Success message
+    } else {
+        printf("Failed to create directory '%s'.\n", dir_name); // Error message
+    }
+}
+
 int main() {
     char input[MAX_INPUT];
     char time_buffer[9]; // Buffer for storing current time
@@ -174,8 +195,10 @@ int main() {
                 handle_wlsctl_help();  // Show supported Wi-Fi cards
             } else if (strncmp(input, "rtl -c ", 7) == 0) {
                 handle_rtl_connect(input);  // Connect to Wi-Fi
+            } else if (strncmp(input, "mkdir ", 6) == 0) {
+                handle_mkdir(input);  // Create directory
             } else {
-                printf("Unknown command: %s\n", input);
+                printf("Unknown command: %s\n", input); // Handle unknown commands
             }
         }
     }
