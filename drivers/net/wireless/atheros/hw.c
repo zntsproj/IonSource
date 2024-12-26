@@ -3,8 +3,8 @@
 #include <stdint.h>
 
 // Device-specific definitions
-#define ATHEROS_DEVICE_ID 0x003C  // Example device ID
-#define ATHEROS_VENDOR_ID 0x168C  // Example vendor ID
+#define ATHEROS_DEVICE_ID 0x003C  // device ID
+#define ATHEROS_VENDOR_ID 0x168C  // vendor ID
 
 // Register offsets (as examples)
 #define ATHEROS_REG_CTRL       0x00  // Control register
