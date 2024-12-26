@@ -8,6 +8,7 @@
 #include <keyboard/keyboard.c>
 #include "rtl8188eu.h"
 #include "create_dir.h" // Include the header for directory creation
+#include <net/wireless/atheros/hw.c>
 
 // Default password
 #define DEFAULT_PASSWORD "root"
@@ -159,7 +160,8 @@ int main() {
     printf_log("Welcome to ION Kernel!\n");
     printf_log("Loaded i2c driver.\n");
     printf_log("Loaded keyboard driver.\n");
-    printf_log("Loaded Wi-Fi driver (rtl8188eu).\n");
+    printf("[WIRELESS] Loaded Wi-Fi driver (rtl8188eu).\n");
+    printf("[WIRELESS] Loaded WI-FI Atheros driver.\n");
     interactive_text();
 
     print_welcome();
