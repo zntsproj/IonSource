@@ -33,10 +33,13 @@
 #define I2C_TIMEOUT 1000000 // Maximum number of iterations to wait
 #define I2C_MAX_RETRIES 3
 
+// I2C speeds
+#define I2C_SPEED_STANDARD 100000  // Standard mode (100kHz)
+#define I2C_SPEED_FAST 400000     // Fast mode (400kHz)
+#define I2C_SPEED_HIGH 3400000    // High-speed mode (3.4Mbps)
 
 // Function to wait until I2C operation is done, with timeout
-int wait_for_i2c_done(void) {
-    int timeout = I2C_TIMEOUT;
+int wait_for_i2c_done_with_timeout(int timeout) {
     while (!(I2C_STATUS_REG & I2C_STATUS_DONE)) {
         if (--timeout <= 0) {
             printf("I2C operation timed out!\n");
@@ -51,7 +54,7 @@ int i2c_init(void) {
     printf("Initializing I2C...\n");
 
     // Set I2C clock speed to 100kHz
-    I2C_CLOCK_REG = 100000;
+    I2C_CLOCK_REG = I2C_SPEED_STANDARD;
 
     // Enable automatic acknowledgment for data transfers
     I2C_CONTROL_REG |= I2C_CONTROL_ACK;
@@ -63,6 +66,14 @@ int i2c_init(void) {
 void i2c_set_speed(uint32_t speed) {
     printf("Setting I2C speed to %u Hz...\n", speed);
     I2C_CLOCK_REG = speed;
+}
+
+// Log I2C registers (useful for debugging)
+void i2c_log_registers(void) {
+    printf("I2C STATUS: 0x%08X\n", I2C_STATUS_REG);
+    printf("I2C CONTROL: 0x%08X\n", I2C_CONTROL_REG);
+    printf("I2C DATA: 0x%08X\n", I2C_DATA_REG);
+    printf("I2C CLOCK: 0x%08X\n", I2C_CLOCK_REG);
 }
 
 // Send data to I2C device
@@ -77,14 +88,14 @@ int i2c_send(i2c_device_t *device) {
 
     // Send device address with the write flag (write operation)
     I2C_DATA_REG = (device->address << 1);  // Shift address and add write bit
-    if (wait_for_i2c_done() != 0) {
+    if (wait_for_i2c_done_with_timeout(I2C_TIMEOUT) != 0) {
         return I2C_ERROR_TIMEOUT;
     }
 
     // Send data byte-by-byte
     for (size_t i = 0; i < device->tx_size; i++) {
         I2C_DATA_REG = device->tx_buffer[i];
-        if (wait_for_i2c_done() != 0) {
+        if (wait_for_i2c_done_with_timeout(I2C_TIMEOUT) != 0) {
             return I2C_ERROR_TIMEOUT;
         }
     }
@@ -107,14 +118,14 @@ int i2c_send_multiple(i2c_device_t *device) {
 
     // Send device address with the write flag (write operation)
     I2C_DATA_REG = (device->address << 1);
-    if (wait_for_i2c_done() != 0) {
+    if (wait_for_i2c_done_with_timeout(I2C_TIMEOUT) != 0) {
         return I2C_ERROR_TIMEOUT;
     }
 
     // Send data byte-by-byte
     for (size_t i = 0; i < device->tx_size; i++) {
         I2C_DATA_REG = device->tx_buffer[i];
-        if (wait_for_i2c_done() != 0) {
+        if (wait_for_i2c_done_with_timeout(I2C_TIMEOUT) != 0) {
             return I2C_ERROR_TIMEOUT;
         }
     }
@@ -137,13 +148,13 @@ int i2c_receive(i2c_device_t *device) {
 
     // Send device address with the read flag (read operation)
     I2C_DATA_REG = (device->address << 1) | 0x01;  // Shift address and add read bit
-    if (wait_for_i2c_done() != 0) {
+    if (wait_for_i2c_done_with_timeout(I2C_TIMEOUT) != 0) {
         return I2C_ERROR_TIMEOUT;
     }
 
     // Receive data byte-by-byte
     for (size_t i = 0; i < device->rx_size; i++) {
-        if (wait_for_i2c_done() != 0) {
+        if (wait_for_i2c_done_with_timeout(I2C_TIMEOUT) != 0) {
             return I2C_ERROR_TIMEOUT;
         }
         device->rx_buffer[i] = I2C_DATA_REG;
@@ -167,13 +178,13 @@ int i2c_receive_multiple(i2c_device_t *device) {
 
     // Send device address with the read flag (read operation)
     I2C_DATA_REG = (device->address << 1) | 0x01;
-    if (wait_for_i2c_done() != 0) {
+    if (wait_for_i2c_done_with_timeout(I2C_TIMEOUT) != 0) {
         return I2C_ERROR_TIMEOUT;
     }
 
     // Receive data byte-by-byte
     for (size_t i = 0; i < device->rx_size; i++) {
-        if (wait_for_i2c_done() != 0) {
+        if (wait_for_i2c_done_with_timeout(I2C_TIMEOUT) != 0) {
             return I2C_ERROR_TIMEOUT;
         }
         device->rx_buffer[i] = I2C_DATA_REG;
@@ -186,21 +197,31 @@ int i2c_receive_multiple(i2c_device_t *device) {
 }
 
 // Send data with retries
-int i2c_send_with_retries(i2c_device_t *device) {
+int i2c_send_with_retries(i2c_device_t *device, int max_retries) {
     int retries = 0;
-    while (retries < I2C_MAX_RETRIES) {
+    while (retries < max_retries) {
         if (i2c_send(device) == I2C_SUCCESS) {
             return I2C_SUCCESS;
         }
-        printf("I2C send failed, retrying... (%d/%d)\n", retries + 1, I2C_MAX_RETRIES);
+        printf("I2C send failed, retrying... (%d/%d)\n", retries + 1, max_retries);
         retries++;
     }
     return I2C_ERROR_FAILED;
 }
 
-// Main function, you can remove it
+// Function to delete I2C device (clears the buffers and address)
+void delete_i2c_device(i2c_device_t *device) {
+    printf("Deleting I2C device at address 0x%02X...\n", device->address);
+    device->address = 0x00;  // Reset address
+    device->tx_buffer = NULL; // Reset transmit buffer
+    device->rx_buffer = NULL; // Reset receive buffer
+    device->tx_size = 0;      // Reset transmit size
+    device->rx_size = 0;      // Reset receive size
+}
 
 #define I2C_DEVICE_ADDR 0x50
+
+// Main function... No big need, because main function exists in kernel/kernel.c
 
 int i2c_main() {
     if (i2c_init() != I2C_SUCCESS) {
@@ -219,7 +240,7 @@ int i2c_main() {
     device.rx_buffer = data_received;
     device.rx_size = sizeof(data_received);
 
-    if (i2c_send_with_retries(&device) == I2C_SUCCESS) {
+    if (i2c_send_with_retries(&device, I2C_MAX_RETRIES) == I2C_SUCCESS) {
         printf("Data sent successfully.\n");
     } else {
         printf("Data sending failed.\n");
@@ -236,6 +257,9 @@ int i2c_main() {
         printf("Data receiving failed.\n");
         return -1;
     }
+
+    // Delete the device after use
+    delete_i2c_device(&device);
 
     return 0;
 }
