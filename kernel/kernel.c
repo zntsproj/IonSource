@@ -1,3 +1,17 @@
+/*
+ * This code is distributed under the GNU General Public License (GPL).
+ * This means you are free to use, modify, and distribute it, but there are a few conditions:
+ *
+ * 1. If you modify the code and distribute it, you must provide the source code so others can study and modify it.
+ * 2. This code and any modifications must remain under the GPL license to ensure freedom for everyone who uses it.
+ *
+ * The GPL gives you the freedom to work with the code, but it's important to remember that these freedoms should be available to others as well.
+ * If you're not familiar with the license, you can read the full text on the official GNU website (https://www.gnu.org/licenses/gpl-3.0.html).
+ *
+ * Enjoy working with the code! ;)
+ */
+
+
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -10,7 +24,7 @@
 #include "create_dir.h" // Include the header for directory creation
 #include <net/wireless/atheros/hw.c>
 #include <hdmi/hdmi.c>
-#include <irda/irda.c>
+#include <irda/irda.h>
 
 // Default password
 #define DEFAULT_PASSWORD "root"
@@ -70,14 +84,15 @@ void handle_help() {
     printf("  sysinfo - shows the system information\n");
     printf("  wlsctl --help - Show supported Wi-Fi cards\n");
     printf("  rtl -c <SSID> <Password> - Connect to Wi-Fi using rtl8188eu\n");
-    printf("  mkdir <dir_name> - Create a new directory\n"); // Added the new command description
+    printf("  mkdir <dir_name> - Create a new directory\n");
+    printf("  ionconfig - Configure Drivers (on/off)\n"); // Added the ionconfig command
 }
 
 /**
  * Handles the "echo" command by printing the given message.
  */
 void handle_echo(const char *input) {
-    const char *message = input + 5; // Skip the "echo " part
+    const char *message = input + 5;
     printf("%s\n", message);
 }
 
@@ -121,7 +136,7 @@ void handle_wlsctl_help() {
  * Connects to Wi-Fi using the rtl8188eu driver.
  */
 void handle_rtl_connect(const char *input) {
-    const char *ssid_start = input + 5; // Skip "rtl -c " part
+    const char *ssid_start = input + 5;
     char ssid[256];
     char password[256];
 
@@ -142,17 +157,48 @@ void handle_rtl_connect(const char *input) {
  * Handles the "mkdir" command by creating a directory.
  */
 void handle_mkdir(const char *input) {
-    const char *dir_name = input + 6; // Skip "mkdir " part
+    const char *dir_name = input + 6;
     if (strlen(dir_name) == 0) {
         printf("Invalid syntax! Use: mkdir <dir_name>\n");
         return;
     }
 
-    int result = create_dir(dir_name); // Call the create_dir funfction to create the directory
+    int result = create_dir(dir_name); // Call the create_dir function to create the directory
     if (result == 0) {
         printf("Directory '%s' created successfully.\n", dir_name); // Success message
     } else {
         printf("Failed to create directory '%s'.\n", dir_name); // Error message
+    }
+}
+
+/**
+ * Handles the "ionconfig" command.
+ * Allows users to toggle the drivers on/off.
+ */
+void handle_ionconfig() {
+    int option = 0; // 0: off, 1: on
+    char input;
+    
+    while (1) {
+        system("clear");  // Clear the screen
+        printf("ION CONFIGURATION\n");
+        printf("Use the arrow keys to toggle the Driver status.\n\n");
+        printf("[I2C Driver: %s]\n", option ? "on" : "off");
+        printf("\nPress 'Enter' to confirm or 'q' to quit.\n");
+
+        input = getchar();
+        if (input == 'q') {
+            break;
+        } else if (input == '\n') {
+            if (option == 1) {
+                i2c_main();  // Call i2c_main if the driver is on
+            }
+            break;
+        } else if (input == 65) {  // Up arrow
+            option = 1;  // Turn I2C on
+        } else if (input == 66) {  // Down arrow
+            option = 0;  // Turn I2C off
+        }
     }
 }
 
@@ -206,6 +252,8 @@ int main() {
                 handle_rtl_connect(input);  // Connect to Wi-Fi
             } else if (strncmp(input, "mkdir ", 6) == 0) {
                 handle_mkdir(input);  // Create directory
+            } else if (strcmp(input, "ionconfig") == 0) {
+                handle_ionconfig();  // Handle ionconfig
             } else {
                 printf("Unknown command: %s\n", input); // Handle unknown commands
             }
