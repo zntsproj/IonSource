@@ -24,7 +24,7 @@
 #include "create_dir.h" // Include the header for directory creation
 #include <net/wireless/atheros/hw.c>
 #include <hdmi/hdmi.c>
-#include <irda/irda.h>
+#include <irda/irda.c>
 
 // Default password
 #define DEFAULT_PASSWORD "root"
