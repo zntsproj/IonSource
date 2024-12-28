@@ -9,6 +9,7 @@
 #include "rtl8188eu.h"
 #include "create_dir.h" // Include the header for directory creation
 #include <net/wireless/atheros/hw.c>
+#include <hdmi/hdmi.c>
 
 // Default password
 #define DEFAULT_PASSWORD "root"
@@ -40,6 +41,10 @@ void interactive_text() {
     } else {
         printf_log("Error reading input!\n");
     }
+}
+
+void hdmi_irq_handler(void *data) {
+    printf("HDMI interrupt handled! Data: %p\n", data);
 }
 
 void print_welcome() {
@@ -121,7 +126,7 @@ void handle_rtl_connect(const char *input) {
 
     // Parse SSID and password
     if (sscanf(ssid_start, "%s %s", ssid, password) == 2) {
-        int result = rtl8188eu_connect(ssid, password);
+        int result = rtl8188eu_connect(ssid, password, 100000);
         if (result == 0) {
             printf("Successfully connected to Wi-Fi network %s\n", ssid);
         } else {
@@ -142,7 +147,7 @@ void handle_mkdir(const char *input) {
         return;
     }
 
-    int result = create_dir(dir_name); // Call the create_dir function to create the directory
+    int result = create_dir(dir_name); // Call the create_dir funfction to create the directory
     if (result == 0) {
         printf("Directory '%s' created successfully.\n", dir_name); // Success message
     } else {
@@ -162,6 +167,7 @@ int main() {
     printf_log("Loaded keyboard driver.\n");
     printf("[WIRELESS] Loaded Wi-Fi driver (rtl8188eu).\n");
     printf("[WIRELESS] Loaded WI-FI Atheros driver.\n");
+    printf("[HDMI] Driver loaded...\n");
     interactive_text();
 
     print_welcome();
