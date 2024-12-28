@@ -20,9 +20,13 @@
 #define STATUS_CONNECTED         0x01    // Status: connected
 #define STATUS_DISCONNECTED      0x00    // Status: disconnected
 
+// Default timeout values (in arbitrary units)
+#define DEFAULT_CONNECT_TIMEOUT  1000
+#define DEFAULT_DISCONNECT_TIMEOUT 1000
+
 // Function to connect to a Wi-Fi network
-static inline int rtl8188eu_connect(const char *ssid, const char *password) {
-    // Check input parameters
+static inline int rtl8188eu_connect(const char *ssid, const char *password, int timeout_ms) {
+    // Validate input parameters
     if (!ssid || strlen(ssid) == 0 || strlen(ssid) >= 256) {
         return -1;  // Invalid SSID
     }
@@ -50,7 +54,7 @@ static inline int rtl8188eu_connect(const char *ssid, const char *password) {
     outb(RTL8188EU_PORT_CMD, CMD_CONNECT);
 
     // Wait for the connection to be established
-    for (int timeout = 1000; timeout > 0; timeout--) {
+    for (int timeout = timeout_ms; timeout > 0; timeout--) {
         uint8_t status = inb(RTL8188EU_PORT_STATUS);
         if (status == STATUS_CONNECTED) {
             return 0;  // Connection successful
@@ -58,16 +62,16 @@ static inline int rtl8188eu_connect(const char *ssid, const char *password) {
     }
 
     // If we reach here, the connection timed out
-    return -3;  // Connection failed
+    return -3;  // Connection failed due to timeout
 }
 
 // Function to disconnect from the Wi-Fi network
-static inline int rtl8188eu_disconnect(void) {
+static inline int rtl8188eu_disconnect(int timeout_ms) {
     // Issue the disconnect command
     outb(RTL8188EU_PORT_CMD, CMD_DISCONNECT);
 
     // Wait for the device to confirm disconnection
-    for (int timeout = 1000; timeout > 0; timeout--) {
+    for (int timeout = timeout_ms; timeout > 0; timeout--) {
         uint8_t status = inb(RTL8188EU_PORT_STATUS);
         if (status == STATUS_DISCONNECTED) {
             return 0;  // Disconnection successful
@@ -75,7 +79,16 @@ static inline int rtl8188eu_disconnect(void) {
     }
 
     // If we reach here, the disconnection timed out
-    return -1;  // Disconnection failed
+    return -1;  // Disconnection failed due to timeout
+}
+
+// Wrapper functions with default timeouts
+static inline int rtl8188eu_connect_default(const char *ssid, const char *password) {
+    return rtl8188eu_connect(ssid, password, DEFAULT_CONNECT_TIMEOUT);
+}
+
+static inline int rtl8188eu_disconnect_default(void) {
+    return rtl8188eu_disconnect(DEFAULT_DISCONNECT_TIMEOUT);
 }
 
 #endif // RTL8188EU_H
