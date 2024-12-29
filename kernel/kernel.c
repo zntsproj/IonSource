@@ -11,7 +11,6 @@
  * Enjoy working with the code! ;)
  */
 
-
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -24,6 +23,7 @@
 #include "create_dir.h" // Include the header for directory creation
 #include <net/wireless/atheros/hw.c>
 #include <hdmi/hdmi.c>
+#include <net/wireless/wran/wran.c>
 #include <irda/irda.c>
 
 // Default password
