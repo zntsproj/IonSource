@@ -5,13 +5,15 @@
 
 // Define IRQ for the RF module
 #define IRQ_RF_MODULE 42 
+#define RF_MODE_RX  0x01
+#define RF_MODE_TX  0x02
 
 // Structure to represent the RF module device
 struct rf_module_device {
     uint8_t mode;  // Mode of the RF module 
 };
 
-void rf_module_irq_handler(void *data); // forward decl.
+void rf_module_irq_handler(void *data);
 
 // Declaration of the function to set the mode
 static inline void rf_module_set_mode(struct rf_module_device *device, uint8_t mode);
