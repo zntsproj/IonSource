@@ -26,6 +26,8 @@
 #include <net/wireless/wran/wran.c>
 #include <irda/irda.c>
 #include "ieee802156.h"
+#include "ieee80211.h"
+#include <gpio/gpio.c>
 
 // Default password
 #define DEFAULT_PASSWORD "root"
@@ -87,7 +89,8 @@ void handle_help() {
     printf("  wlsctl --help - Show supported Wi-Fi cards\n");
     printf("  rtl -c <SSID> <Password> - Connect to Wi-Fi using rtl8188eu\n");
     printf("  mkdir <dir_name> - Create a new directory\n");
-    printf("  ionconfig - Configure Drivers (on/off)\n"); // Added the ionconfig command
+    printf("  ionconfig - Configure Drivers (on/off)\n");
+    printf("  ieeecfg - Configure IEEE Standard");
 }
 
 /**
@@ -178,30 +181,75 @@ void handle_mkdir(const char *input) {
  * Allows users to toggle the drivers on/off.
  */
 void handle_ionconfig() {
-    int option = 0; // 0: off, 1: on
+    int i2c_option = 0; // 0: off, 1: on for I2C
+    int gpio_option = 0; // 0: off, 1: on for GPIO
     char input;
-    
+    int selected_driver = 0; // Selected driver (1: I2C, 2: GPIO)
+
     while (1) {
         system("clear");  // Clear the screen
-        printf("ION CONFIGURATION\n");
-        printf("[I2C Driver: %s]\n", option ? "on" : "off");
-        printf("\nPress 'Enter' to confirm or 'q' to quit.\n");
 
+        // Display available drivers and their current state
+        printf("ION CONFIGURATION\n");
+        printf("1) [I2C] %s (default: off)\n", i2c_option ? "On" : "Off");
+        printf("2) [GPIO] %s (default: off)\n", gpio_option ? "On" : "Off");
+        printf("\nChoose a driver: ");
+        
+        // Read user input for driver selection
         input = getchar();
-        if (input == 'q') {
-            break;
-        } else if (input == '\n') {
-            if (option == 1) {
-                i2c_main();  // Call i2c_main if the driver is on
+        getchar(); // Consume the newline character
+
+        // Handle the selection of the driver
+        if (input == '1') {
+            selected_driver = 1;  // I2C driver
+        } else if (input == '2') {
+            selected_driver = 2;  // GPIO driver
+        } else if (input == 'q') {
+            break;  // Exit the configuration
+        } else {
+            printf("Invalid choice! Try again.\n");
+            continue;
+        }
+
+        // Ask user to enable/disable the selected driver
+        while (1) {
+            system("clear");  // Clear the screen
+            printf("ION CONFIGURATION\n");
+
+            // Prompt user for enabling/disabling the selected driver
+            if (selected_driver == 1) {
+                printf("[I2C] Current state: %s\n", i2c_option ? "On" : "Off");
+            } else if (selected_driver == 2) {
+                printf("[GPIO] Current state: %s\n", gpio_option ? "On" : "Off");
             }
-            break;
-        } else if (input == '1') {  // Input '1' to turn on
-            option = 1;  // Turn I2C on
-        } else if (input == '0') {  // Input '0' to turn off
-            option = 0;  // Turn I2C off
+
+            // Display option to enable (1) or disable (2) the driver
+            printf("\nChoose an option: 1 - On, 2 - Off\n");
+            input = getchar();
+            getchar(); // Consume the newline character
+
+            if (input == '1') {
+                if (selected_driver == 1) {
+                    i2c_option = 1;  // Turn on I2C driver
+                } else if (selected_driver == 2) {
+                    gpio_option = 1;  // Turn on GPIO driver
+                    gpio_init();  // Initialize GPIO pins when driver is turned on
+                }
+                break;  // Exit the inner loop after enabling the driver
+            } else if (input == '2') {
+                if (selected_driver == 1) {
+                    i2c_option = 0;  // Turn off I2C driver
+                } else if (selected_driver == 2) {
+                    gpio_option = 0;  // Turn off GPIO driver
+                }
+                break;  // Exit the inner loop after disabling the driver
+            } else {
+                printf("Invalid option! Please select 1 to enable or 2 to disable.\n");
+            }
         }
     }
 }
+
 
 void handle_ieeecfg() {
     char choice;
@@ -218,6 +266,7 @@ void handle_ieeecfg() {
     printf("Remember: Even the smallest misstep can lead to a kernel meltdown.\n");
     printf("1) WRAN (802.22)\n");  // Option for WRAN (802.22)
     printf("2) IEEE 802.15.6\n");  // Option for IEEE 802.15.6
+    printf("3) IEEE 802.11A\n");   // Option for IEEE 802.11A
 
     printf("Choose option: ");
     choice = getchar();  // Read user input
@@ -228,18 +277,29 @@ void handle_ieeecfg() {
             break;
         case '2':
             printf("IEEE 802.15.6 selected\n");
-            // Configure IEEE 802.15.6 with the default settings\n");
+            // Configure IEEE 802.15.6 with the default settings
             if (configure_ieee802156(&config) == DEVICE_OK) {
                 printf("IEEE 802.15.6 configured successfully.\n");
             } else {
                 printf("Failed to configure IEEE 802.15.6.\n");
             }
             break;
+        case '3':
+            printf("IEEE 802.11A selected\n");
+            ieee80211_config_t ieee_config = {
+                .standard = IEEE80211_11A,
+                .is_enabled = 1,
+                .initialize = ieee80211_init_11a,
+                .shutdown = NULL
+            };
+            ieee80211_configure(&ieee_config);  // Initialize IEEE 802.11A
+            break;
         default:
             printf("Invalid option\n");  // Handle invalid options
             break;
     }
 }
+
 
 int main() {
     char input[MAX_INPUT];
@@ -303,4 +363,3 @@ int main() {
 
     return 0;
 }
-
