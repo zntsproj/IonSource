@@ -25,6 +25,7 @@
 #include <hdmi/hdmi.c>
 #include <net/wireless/wran/wran.c>
 #include <irda/irda.c>
+#include "ieee802156.h"
 
 // Default password
 #define DEFAULT_PASSWORD "root"
@@ -65,6 +66,7 @@ void hdmi_irq_handler(void *data) {
 void print_welcome() {
     printf("\033[33mIon Terminal 1.05 Stable - type help for basic commands\033[0m\n");
     printf("\033[1;35mSupport Ion on Open Collective: https://opencollective.com/ion-kernel\033[0m\n");
+    printf("\033[31mIMPORTANT! Ion kernel may not be fully configured. Configure with: ieeecfg, ionconfig\033[0m\n");
 }
 
 void get_current_time(char *buffer, size_t size) {
@@ -182,7 +184,6 @@ void handle_ionconfig() {
     while (1) {
         system("clear");  // Clear the screen
         printf("ION CONFIGURATION\n");
-        printf("Use the arrow keys to toggle the Driver status.\n\n");
         printf("[I2C Driver: %s]\n", option ? "on" : "off");
         printf("\nPress 'Enter' to confirm or 'q' to quit.\n");
 
@@ -194,11 +195,49 @@ void handle_ionconfig() {
                 i2c_main();  // Call i2c_main if the driver is on
             }
             break;
-        } else if (input == 65) {  // Up arrow
+        } else if (input == '1') {  // Input '1' to turn on
             option = 1;  // Turn I2C on
-        } else if (input == 66) {  // Down arrow
+        } else if (input == '0') {  // Input '0' to turn off
             option = 0;  // Turn I2C off
         }
+    }
+}
+
+void handle_ieeecfg() {
+    char choice;
+    ieee802156_config_t config;
+
+    // Set default configuration values for IEEE 802.15.6
+    config.frequency = IEEE802156_FREQUENCY;
+    config.bandwidth = IEEE802156_BANDWIDTH;
+    config.modulation = 0;  // Default modulation
+    config.power_level = 100;  // Default power level
+
+    system("clear");  // Clear the screen for a fresh display
+    printf("\033[1;34m--- Configure IEEE Standard ---\033[0m\n");
+    printf("Remember: Even the smallest misstep can lead to a kernel meltdown.\n");
+    printf("1) WRAN (802.22)\n");  // Option for WRAN (802.22)
+    printf("2) IEEE 802.15.6\n");  // Option for IEEE 802.15.6
+
+    printf("Choose option: ");
+    choice = getchar();  // Read user input
+
+    switch (choice) {
+        case '1':
+            printf("WRAN (802.22) selected\n");
+            break;
+        case '2':
+            printf("IEEE 802.15.6 selected\n");
+            // Configure IEEE 802.15.6 with the default settings\n");
+            if (configure_ieee802156(&config) == DEVICE_OK) {
+                printf("IEEE 802.15.6 configured successfully.\n");
+            } else {
+                printf("Failed to configure IEEE 802.15.6.\n");
+            }
+            break;
+        default:
+            printf("Invalid option\n");  // Handle invalid options
+            break;
     }
 }
 
@@ -254,6 +293,8 @@ int main() {
                 handle_mkdir(input);  // Create directory
             } else if (strcmp(input, "ionconfig") == 0) {
                 handle_ionconfig();  // Handle ionconfig
+            } else if (strcmp(input, "ieeecfg") == 0) {
+                handle_ieeecfg();  // Handle ieeecfg
             } else {
                 printf("Unknown command: %s\n", input); // Handle unknown commands
             }
@@ -262,3 +303,4 @@ int main() {
 
     return 0;
 }
+
