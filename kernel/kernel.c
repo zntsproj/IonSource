@@ -15,7 +15,7 @@
 #include "ieee802156.h"
 #include "ieee80211.h"
 #include <gpio/gpio.c>
-#include "panic.c" // Link kernel panic file
+#include "panic.c" // Link kernel panic
 
 // Default password
 #define DEFAULT_PASSWORD "root"
@@ -79,6 +79,8 @@ void handle_help() {
     printf("  mkdir <dir_name> - Create a new directory\n");
     printf("  ionconfig - Configure Drivers (on/off)\n");
     printf("  ieeecfg - Configure IEEE Standard\n");
+    printf("  fpanic - Force Panic! Only with password\n");
+    printf("  setpwd - Set password\n");
 }
 
 /**
@@ -288,6 +290,50 @@ void handle_ieeecfg() {
     }
 }
 
+#define MAX_PASSWORD_LENGTH 64
+
+// Global variable for storing the current password
+static char current_password[MAX_PASSWORD_LENGTH] = DEFAULT_PASSWORD;
+
+// Function to change the password
+void set_password(const char* new_password) {
+    if (strlen(new_password) < MAX_PASSWORD_LENGTH) {
+        strncpy(current_password, new_password, MAX_PASSWORD_LENGTH - 1);
+        current_password[MAX_PASSWORD_LENGTH - 1] = '\0'; // Null-terminate
+        printf("Password successfully updated!\n");
+    } else {
+        printf("Error: Password length exceeds the maximum limit of %d characters.\n", MAX_PASSWORD_LENGTH - 1);
+    }
+}
+
+// Command to handle force_panic with password authentication
+void handle_fpanic(const char* input) {
+    char entered_password[MAX_PASSWORD_LENGTH];
+
+    printf("Enter password to trigger panic: ");
+    if (fgets(entered_password, sizeof(entered_password), stdin)) {
+        entered_password[strcspn(entered_password, "\n")] = '\0'; // Remove newline
+
+        if (strcmp(entered_password, current_password) == 0) {
+            printf("Password correct! Triggering kernel panic...\n");
+            force_panic("Forced panic initiated by user.");
+        } else {
+            printf("Incorrect password! Panic not triggered.\n");
+        }
+    } else {
+        printf("Error reading input!\n");
+    }
+}
+
+// Command to set a new password
+void handle_setpwd(const char* input) {
+    const char* new_password = input + 7; // Skip "setpwd "
+    if (strlen(new_password) > 0) {
+        set_password(new_password);
+    } else {
+        printf("Error: Please provide a new password.\n");
+    }
+}
 
 int main() {
     char input[MAX_INPUT];
@@ -343,6 +389,10 @@ int main() {
                 handle_ionconfig();  // Handle ionconfig
             } else if (strcmp(input, "ieeecfg") == 0) {
                 handle_ieeecfg();  // Handle ieeecfg
+            } else if (strcmp(input, "fpanic") == 0) {
+                            handle_fpanic(input);
+            } else if (strncmp(input, "setpwd ", 7) == 0) {
+                            handle_setpwd(input);
             } else {
                 printf("Unknown command: %s\n", input); // Handle unknown commands
             }
