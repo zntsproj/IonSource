@@ -1,16 +1,3 @@
-/*
- * This code is distributed under the GNU General Public License (GPL).
- * This means you are free to use, modify, and distribute it, but there are a few conditions:
- *
- * 1. If you modify the code and distribute it, you must provide the source code so others can study and modify it.
- * 2. This code and any modifications must remain under the GPL license to ensure freedom for everyone who uses it.
- *
- * The GPL gives you the freedom to work with the code, but it's important to remember that these freedoms should be available to others as well.
- * If you're not familiar with the license, you can read the full text on the official GNU website (https://www.gnu.org/licenses/gpl-3.0.html).
- *
- * Enjoy working with the code! ;)
- */
-
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -28,6 +15,7 @@
 #include "ieee802156.h"
 #include "ieee80211.h"
 #include <gpio/gpio.c>
+#include "panic.c" // Link kernel panic file
 
 // Default password
 #define DEFAULT_PASSWORD "root"
@@ -90,7 +78,7 @@ void handle_help() {
     printf("  rtl -c <SSID> <Password> - Connect to Wi-Fi using rtl8188eu\n");
     printf("  mkdir <dir_name> - Create a new directory\n");
     printf("  ionconfig - Configure Drivers (on/off)\n");
-    printf("  ieeecfg - Configure IEEE Standard");
+    printf("  ieeecfg - Configure IEEE Standard\n");
 }
 
 /**
