@@ -16,6 +16,7 @@
 #include "ieee80211.h"
 #include <gpio/gpio.c>
 #include "panic.c" // Link kernel panic
+#include <net/wireless/qcom/qca988x/qca988x.c> // QCOM 988X adapter driver
 
 // Default password
 #define DEFAULT_PASSWORD "root"
@@ -173,8 +174,9 @@ void handle_mkdir(const char *input) {
 void handle_ionconfig() {
     int i2c_option = 0; // 0: off, 1: on for I2C
     int gpio_option = 0; // 0: off, 1: on for GPIO
+    int qca_option = 0;  // 0: off, 1: on for QCA 988X
     char input;
-    int selected_driver = 0; // Selected driver (1: I2C, 2: GPIO)
+    int selected_driver = 0; // Selected driver (1: I2C, 2: GPIO, 3: QCA 988X)
 
     while (1) {
         system("clear");  // Clear the screen
@@ -183,17 +185,19 @@ void handle_ionconfig() {
         printf("ION CONFIGURATION\n");
         printf("1) [I2C] %s (default: off)\n", i2c_option ? "On" : "Off");
         printf("2) [GPIO] %s (default: off)\n", gpio_option ? "On" : "Off");
-        printf("\nChoose a driver: ");
+        printf("3) [QCA 988X Driver] %s (default: off)\n", qca_option ? "On" : "Off");
+        printf("\nChoose a driver (q to quit): ");
         
         // Read user input for driver selection
         input = getchar();
         getchar(); // Consume the newline character
 
-        // Handle the selection of the driver
         if (input == '1') {
             selected_driver = 1;  // I2C driver
         } else if (input == '2') {
             selected_driver = 2;  // GPIO driver
+        } else if (input == '3') {
+            selected_driver = 3;  // QCA 988X driver
         } else if (input == 'q') {
             break;  // Exit the configuration
         } else {
@@ -201,19 +205,18 @@ void handle_ionconfig() {
             continue;
         }
 
-        // Ask user to enable/disable the selected driver
         while (1) {
             system("clear");  // Clear the screen
             printf("ION CONFIGURATION\n");
 
-            // Prompt user for enabling/disabling the selected driver
             if (selected_driver == 1) {
                 printf("[I2C] Current state: %s\n", i2c_option ? "On" : "Off");
             } else if (selected_driver == 2) {
                 printf("[GPIO] Current state: %s\n", gpio_option ? "On" : "Off");
+            } else if (selected_driver == 3) {
+                printf("[QCA 988X Driver] Current state: %s\n", qca_option ? "On" : "Off");
             }
 
-            // Display option to enable (1) or disable (2) the driver
             printf("\nChoose an option: 1 - On, 2 - Off\n");
             input = getchar();
             getchar(); // Consume the newline character
@@ -224,15 +227,20 @@ void handle_ionconfig() {
                 } else if (selected_driver == 2) {
                     gpio_option = 1;  // Turn on GPIO driver
                     gpio_init();  // Initialize GPIO pins when driver is turned on
+                } else if (selected_driver == 3) {
+                    qca_option = 1;  // Turn on QCA 988X driver
+                    qca988x_init();  // Call QCA driver initialization
                 }
-                break;  // Exit the inner loop after enabling the driver
+                break;
             } else if (input == '2') {
                 if (selected_driver == 1) {
                     i2c_option = 0;  // Turn off I2C driver
                 } else if (selected_driver == 2) {
                     gpio_option = 0;  // Turn off GPIO driver
+                } else if (selected_driver == 3) {
+                    qca_option = 0;  // Turn off QCA 988X driver
                 }
-                break;  // Exit the inner loop after disabling the driver
+                break;
             } else {
                 printf("Invalid option! Please select 1 to enable or 2 to disable.\n");
             }
