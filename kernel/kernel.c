@@ -17,6 +17,7 @@
 #include <gpio/gpio.c>
 #include "panic.c" // Link kernel panic
 #include <net/wireless/qcom/qca988x/qca988x.c> // QCOM 988X adapter driver
+#include "boot_menu.h"
 
 // Default password
 #define DEFAULT_PASSWORD "root"
@@ -35,7 +36,7 @@ void printf_log(const char* fmt, ...) {
 void interactive_text() {
     char input[256]; // Buffer to store user input
 
-    printf("Enter password (default: root): ");
+    printf("Enter password (default: root): \n ");
     if (fgets(input, sizeof(input), stdin)) {
         // Remove the newline character, if any
         input[strcspn(input, "\n")] = '\0';
@@ -43,7 +44,7 @@ void interactive_text() {
         if (strcmp(input, DEFAULT_PASSWORD) == 0) {
             printf_log("Password correct! Access granted.\n");
         } else {
-            printf_log("Incorrect password! Logging into guest...\n");
+            printf_log("Logging into guest...\n");
         }
     } else {
         printf_log("Error reading input!\n");
@@ -348,6 +349,7 @@ int main() {
     char time_buffer[9]; // Buffer for storing current time
     const char *prompt = "$ "; // Terminal prompt
 
+    boot_menu();
     printf_log("Kernel loaded at 0x10000\n");
     printf_log("Kernel booting...\n");
     printf_log("Welcome to ION Kernel!\n");
@@ -409,3 +411,4 @@ int main() {
 
     return 0;
 }
+
