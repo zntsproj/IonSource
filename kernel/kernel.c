@@ -18,6 +18,8 @@
 #include "panic.c" // Link kernel panic
 #include <net/wireless/qcom/qca988x/qca988x.c> // QCOM 988X adapter driver
 #include "boot_menu.h"
+#include "io_dma.h"
+#include "device.h"
 
 // Default password
 #define DEFAULT_PASSWORD "root"
@@ -126,6 +128,17 @@ void sysinfo_command() {
 void handle_wlsctl_help() {
     printf("Supported Wi-Fi cards:\n");
     printf("  rtl8188eu - Realtek RTL8188EU USB Wi-Fi adapter\n");
+}
+
+#include "ieee802156.h"
+
+int configure_ieee802156(ieee802156_config_t *config) {
+    outl_dma(0x40000000, config->frequency);  // Set the frequency in the device
+    outl_dma(0x40000004, config->bandwidth);  // Set the bandwidth in the device
+    outl_dma(0x40000008, config->modulation); // Set the modulation type
+    outl_dma(0x4000000C, config->power_level); // Set the power level
+
+    return 0;
 }
 
 /**
