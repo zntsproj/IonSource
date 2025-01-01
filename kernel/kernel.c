@@ -20,7 +20,9 @@
 #include "boot_menu.h"
 #include "io_dma.h"
 #include "device.h"
+#include "uwb/dw1000/dw1000.c"
 
+int uwb_option = 0; // 0: off, 1: on for UWB (IONCONFIG)
 // Default password
 #define DEFAULT_PASSWORD "root"
 #define MAX_INPUT 256
@@ -190,7 +192,7 @@ void handle_ionconfig() {
     int gpio_option = 0; // 0: off, 1: on for GPIO
     int qca_option = 0;  // 0: off, 1: on for QCA 988X
     char input;
-    int selected_driver = 0; // Selected driver (1: I2C, 2: GPIO, 3: QCA 988X)
+    int selected_driver = 0; // Selected driver (1: I2C, 2: GPIO, 3: QCA 988X, 4: UWB)
 
     while (1) {
         system("clear");  // Clear the screen
@@ -200,6 +202,7 @@ void handle_ionconfig() {
         printf("1) [I2C] %s (default: off)\n", i2c_option ? "On" : "Off");
         printf("2) [GPIO] %s (default: off)\n", gpio_option ? "On" : "Off");
         printf("3) [QCA 988X Driver] %s (default: off)\n", qca_option ? "On" : "Off");
+        printf("4) [UWB] %s (default: off)\n", uwb_option ? "On" : "Off");  // Добавим UWB
         printf("\nChoose a driver (q to quit): ");
         
         // Read user input for driver selection
@@ -212,6 +215,8 @@ void handle_ionconfig() {
             selected_driver = 2;  // GPIO driver
         } else if (input == '3') {
             selected_driver = 3;  // QCA 988X driver
+        } else if (input == '4') {
+            selected_driver = 4;  // UWB driver
         } else if (input == 'q') {
             break;  // Exit the configuration
         } else {
@@ -229,6 +234,8 @@ void handle_ionconfig() {
                 printf("[GPIO] Current state: %s\n", gpio_option ? "On" : "Off");
             } else if (selected_driver == 3) {
                 printf("[QCA 988X Driver] Current state: %s\n", qca_option ? "On" : "Off");
+            } else if (selected_driver == 4) {
+                printf("[UWB] Current state: %s\n", uwb_option ? "On" : "Off"); 
             }
 
             printf("\nChoose an option: 1 - On, 2 - Off\n");
@@ -244,6 +251,9 @@ void handle_ionconfig() {
                 } else if (selected_driver == 3) {
                     qca_option = 1;  // Turn on QCA 988X driver
                     qca988x_init();  // Call QCA driver initialization
+                } else if (selected_driver == 4) {
+                    uwb_option = 1;  // Turn on UWB driver
+                    dwuwb_init();  // Initialize UWB driver
                 }
                 break;
             } else if (input == '2') {
@@ -253,6 +263,8 @@ void handle_ionconfig() {
                     gpio_option = 0;  // Turn off GPIO driver
                 } else if (selected_driver == 3) {
                     qca_option = 0;  // Turn off QCA 988X driver
+                } else if (selected_driver == 4) {
+                    uwb_option = 0;  // Turn off UWB driver
                 }
                 break;
             } else {
@@ -261,7 +273,6 @@ void handle_ionconfig() {
         }
     }
 }
-
 
 void handle_ieeecfg() {
     char choice;
