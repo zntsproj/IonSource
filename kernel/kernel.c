@@ -22,7 +22,7 @@
 #include "io_dma.h"
 #include "device.h"
 #include "uwb/dw1000/dw1000.c"
-
+#include <ipm/hemu.c> // Library path
 int uwb_option = 0; // 0: off, 1: on for UWB (IONCONFIG)
 
 // Default password
@@ -433,6 +433,11 @@ int main() {
                             handle_fpanic(input);
             } else if (strncmp(input, "setpwd ", 7) == 0) {
                             handle_setpwd(input);
+            } else if (strcmp(input, "ipm get hemu") == 0) {
+                printf("Get Hardware Emulator...");
+                hemu_init();
+            } else if (strcmp(input, "hemu") == 0) {
+                hemu_init();  // HEMU
             } else {
                 printf("Unknown command: %s\n", input); // Handle unknown commands
             }
