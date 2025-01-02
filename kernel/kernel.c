@@ -7,7 +7,8 @@
 #include <i2c/i2c.c>
 #include <keyboard/keyboard.c>
 #include "rtl8188eu.h"
-#include "create_dir.h" // Include the header for directory creation
+#include "create_dir.h" // Minimal user api
+#include "fsapi.h" // Kernel and user FS api
 #include <net/wireless/atheros/hw.c>
 #include <hdmi/hdmi.c>
 #include <net/wireless/wran/wran.c>
@@ -23,6 +24,7 @@
 #include "uwb/dw1000/dw1000.c"
 
 int uwb_option = 0; // 0: off, 1: on for UWB (IONCONFIG)
+
 // Default password
 #define DEFAULT_PASSWORD "root"
 #define MAX_INPUT 256
@@ -245,15 +247,19 @@ void handle_ionconfig() {
             if (input == '1') {
                 if (selected_driver == 1) {
                     i2c_option = 1;  // Turn on I2C driver
+                    create_mknod("i2c", "file=i2c.c");
                 } else if (selected_driver == 2) {
                     gpio_option = 1;  // Turn on GPIO driver
                     gpio_init();  // Initialize GPIO pins when driver is turned on
+                    create_mknod("gpio", "file=gpio.c");
                 } else if (selected_driver == 3) {
                     qca_option = 1;  // Turn on QCA 988X driver
                     qca988x_init();  // Call QCA driver initialization
+                    create_mknod("qca988x", "file=qca988x.c");
                 } else if (selected_driver == 4) {
                     uwb_option = 1;  // Turn on UWB driver
                     dwuwb_init();  // Initialize UWB driver
+                    create_mknod("uwb-dev", "file=uwb.c");
                 }
                 break;
             } else if (input == '2') {
