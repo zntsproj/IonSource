@@ -23,6 +23,8 @@
 #include "device.h"
 #include "uwb/dw1000/dw1000.c"
 #include <ipm/hemu.c> // Library path
+#include <lic/lic.c> // LICGX C-Compiler
+
 int uwb_option = 0; // 0: off, 1: on for UWB (IONCONFIG)
 
 // Default password
@@ -438,6 +440,10 @@ int main() {
                 hemu_init();
             } else if (strcmp(input, "hemu") == 0) {
                 hemu_init();  // HEMU
+            } else if (strcmp(input, "lic create blank") == 0) {
+                lic_create_blank("main.c");
+            } else if (strcmp(input, "lic cmp blank") == 0) {
+                lic_compile_last_blank();
             } else {
                 printf("Unknown command: %s\n", input); // Handle unknown commands
             }
