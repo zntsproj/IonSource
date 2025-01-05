@@ -6,6 +6,48 @@
 #define OUTPUT_FILE "output.bco"  // Default name for the compiled binary file
 
 /**
+ * Checks the syntax of the source file by verifying matching brackets.
+ * Supports (), {}, and [].
+ *
+ * @param filename Name of the source file to check.
+ * @return 1 if syntax is valid, 0 otherwise.
+ */
+int lic_check_syntax(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        perror("Error opening file for syntax check");
+        return 0;
+    }
+
+    // Simple stack for bracket matching
+    char stack[1024];
+    int top = -1;
+
+    int ch;
+    while ((ch = fgetc(file)) != EOF) {
+        if (ch == '(' || ch == '{' || ch == '[') {
+            stack[++top] = ch;
+        } else if (ch == ')' || ch == '}' || ch == ']') {
+            if (top == -1) {
+                fclose(file);
+                return 0; // Closing bracket without matching opening bracket
+            }
+
+            char open = stack[top--];
+            if ((ch == ')' && open != '(') ||
+                (ch == '}' && open != '{') ||
+                (ch == ']' && open != '[')) {
+                fclose(file);
+                return 0; // Mismatched brackets
+            }
+        }
+    }
+
+    fclose(file);
+    return top == -1; // Valid if stack is empty
+}
+
+/**
  * Creates a blank code file and stores its name for future reference.
  * 
  * @param filename Name of the blank file to create.
@@ -61,6 +103,13 @@ void lic_compile_last_blank() {
     FILE *src = fopen(filename, "r");
     if (!src) {
         fprintf(stderr, "Error: file %s does not exist.\n", filename);
+        exit(1);
+    }
+
+    // Check syntax before proceeding with compilation
+    if (!lic_check_syntax(filename)) {
+        fprintf(stderr, "Syntax error in file: %s\n", filename);
+        fclose(src);
         exit(1);
     }
 
