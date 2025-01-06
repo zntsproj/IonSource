@@ -5,6 +5,23 @@
 #define LAST_FILE_PATH ".lic_last" // File to store the name of the last blank file
 #define OUTPUT_FILE "output.bco"  // Default name for the compiled binary file
 
+// Error messages for easier localization
+#define ERROR_FILE_OPEN "Error opening file"
+#define ERROR_SYNTAX "Syntax error in file"
+#define ERROR_FILE_CREATE "Error creating file"
+#define ERROR_FILE_READ "Error reading file"
+#define ERROR_LAST_FILE_READ "Error reading last file name"
+
+// Error handling with detailed messages
+void handle_error(const char *message, const char *filename) {
+    if (filename) {
+        fprintf(stderr, "%s: %s\n", message, filename);
+    } else {
+        fprintf(stderr, "%s\n", message);
+    }
+    exit(1);
+}
+
 /**
  * Checks the syntax of the source file by verifying matching brackets.
  * Supports (), {}, and [].
@@ -15,8 +32,7 @@
 int lic_check_syntax(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
-        perror("Error opening file for syntax check");
-        return 0;
+        handle_error(ERROR_FILE_OPEN, filename);
     }
 
     // Simple stack for bracket matching
@@ -30,7 +46,8 @@ int lic_check_syntax(const char *filename) {
         } else if (ch == ')' || ch == '}' || ch == ']') {
             if (top == -1) {
                 fclose(file);
-                return 0; // Closing bracket without matching opening bracket
+                handle_error("Closing bracket without matching opening bracket", filename);
+                return 0;
             }
 
             char open = stack[top--];
@@ -38,7 +55,8 @@ int lic_check_syntax(const char *filename) {
                 (ch == '}' && open != '{') ||
                 (ch == ']' && open != '[')) {
                 fclose(file);
-                return 0; // Mismatched brackets
+                handle_error("Mismatched brackets", filename);
+                return 0;
             }
         }
     }
@@ -56,16 +74,14 @@ void lic_create_blank(const char *filename) {
     // Create an empty file
     FILE *file = fopen(filename, "w");
     if (!file) {
-        perror("Error creating file");
-        exit(1);
+        handle_error(ERROR_FILE_CREATE, filename);
     }
     fclose(file);
 
     // Save the filename to the last file tracker
     FILE *last_file = fopen(LAST_FILE_PATH, "w");
     if (!last_file) {
-        perror("Error saving last file name");
-        exit(1);
+        handle_error(ERROR_FILE_CREATE, LAST_FILE_PATH);
     }
     fprintf(last_file, "%s\n", filename);
     fclose(last_file);
@@ -86,13 +102,11 @@ void lic_compile_last_blank() {
     // Read the name of the last blank file
     FILE *last_file = fopen(LAST_FILE_PATH, "r");
     if (!last_file) {
-        fprintf(stderr, "No blank file found! Use `lic_create_blank` first.\n");
-        exit(1);
+        handle_error("No blank file found! Use `lic_create_blank` first.", NULL);
     }
     if (!fgets(filename, sizeof(filename), last_file)) {
-        perror("Error reading last file name");
         fclose(last_file);
-        exit(1);
+        handle_error(ERROR_LAST_FILE_READ, NULL);
     }
     fclose(last_file);
 
@@ -102,29 +116,31 @@ void lic_compile_last_blank() {
     // Check if the last blank file exists
     FILE *src = fopen(filename, "r");
     if (!src) {
-        fprintf(stderr, "Error: file %s does not exist.\n", filename);
-        exit(1);
+        handle_error("Error: file does not exist", filename);
     }
 
     // Check syntax before proceeding with compilation
     if (!lic_check_syntax(filename)) {
-        fprintf(stderr, "Syntax error in file: %s\n", filename);
         fclose(src);
-        exit(1);
+        handle_error("Syntax error in file", filename);
     }
 
     // Open the output file for writing
     FILE *out = fopen(OUTPUT_FILE, "w");
     if (!out) {
-        perror("Error creating output file");
         fclose(src);
-        exit(1);
+        handle_error("Error creating output file", OUTPUT_FILE);
     }
 
     // Read each character from the source file
     // Convert it to binary and write it to the output file
     int ch;
     while ((ch = fgetc(src)) != EOF) {
+        if (ch < 0 || ch > 255) {
+            fclose(src);
+            fclose(out);
+            handle_error("Invalid character encountered in file", filename);
+        }
         for (int i = 7; i >= 0; i--) {
             fputc((ch & (1 << i)) ? '1' : '0', out);
         }
