@@ -1,49 +1,53 @@
+; boot.asm
 [BITS 16]
-[ORG 0x7C00]
+[ORG 0x7C00]   ; Load address is 0x7C00 (the location where BIOS loads the bootloader)
 
 start:
-    cli                    
-    xor ax, ax
-    mov ds, ax             
+    ; Initialize segments
+    xor ax, ax             ; Clear the ax register
+    mov ds, ax             ; Set the data segment to 0
+    mov es, ax             ; Set the extra segment to 0
+    mov ss, ax             ; Set the stack segment to 0
+    mov sp, 0x7C00         ; Stack will be placed just after the bootloader
 
-    ; Сообщение о запуске
-    mov si, boot_msg
+    ; Print the "Loading kernel..." message
+    mov si, message
     call print_string
 
-    ; Инициализация загрузки ядра
-    mov ax, 0x1000          ; segment address
-    mov es, ax             
-    xor bx, bx              
+    ; Read the kernel into memory at address 0x10000 (Sector 2, 1 sector)
+    mov ah, 0x02           ; BIOS: Read sector
+    mov al, 1              ; Read 1 sector
+    mov ch, 0              ; Track 0
+    mov cl, 2              ; Sector 2
+    mov dh, 0              ; Head 0
+    int 0x13               ; BIOS interrupt to read the disk
 
-    mov ah, 0x02            ; BIOS: read sectors
-    mov al, 1               ; 1 sector
-    mov ch, 0               ; road 0
-    mov cl, 2               ; sector 2
-    mov dh, 0         
-    int 0x13           
+    ; Check for disk read error
+    jc disk_error
 
-    jc disk_error      
-    jmp 0x10000       
+    ; Jump to the kernel address (0x10000)
+    jmp 0x1000:0x0000      ; Jump to 0x10000 (kernel load address)
 
 disk_error:
+    ; Handle disk read error
     mov si, error_msg
     call print_string
-    cli
-    hlt
+    hlt                    ; Halt the CPU
 
 print_string:
-    mov ah, 0x0E     
+    ; Print the string passed in si
+    mov ah, 0x0E
 .next_char:
-    lodsb                  
-    or al, al         
+    lodsb
+    or al, al
     jz .done
-    int 0x10
+    int 0x10               ; BIOS interrupt to print the character
     jmp .next_char
 .done:
     ret
 
-boot_msg db "Booting ION kernel...", 0
-error_msg db "Disk read error!", 0
+message: db "Loading kernel...", 0
+error_msg: db "Disk read error!", 0
 
-times 510-($-$$) db 0
-dw 0xAA55                 
+times 510 - ($ - $$) db 0  ; Fill the remaining space with zeros up to 510 bytes
+dw 0xAA55                 ; Bootloader magic number
