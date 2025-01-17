@@ -1,80 +1,118 @@
 #ifndef VGA_H
 #define VGA_H
 
-#define VGA_CTRL_PORT  0x3D4
-#define VGA_DATA_PORT  0x3D5
+#include "io.h"
 
-#define VGA_COLOR_BLACK    0
-#define VGA_COLOR_BLUE     1
-#define VGA_COLOR_GREEN    2
-#define VGA_COLOR_CYAN     3
-#define VGA_COLOR_RED      4
-#define VGA_COLOR_MAGENTA  5
-#define VGA_COLOR_BROWN    6
-#define VGA_COLOR_LIGHT_GREY 7
-#define VGA_COLOR_DARK_GREY 8
-#define VGA_COLOR_LIGHT_BLUE 9
-#define VGA_COLOR_LIGHT_GREEN 10
-#define VGA_COLOR_LIGHT_CYAN 11
-#define VGA_COLOR_LIGHT_RED 12
-#define VGA_COLOR_LIGHT_MAGENTA 13
-#define VGA_COLOR_LIGHT_BROWN 14
-#define VGA_COLOR_WHITE 15
+// VGA registers for color palette management
+#define VGA_PALETTE_INDEX_PORT   0x3C7
+#define VGA_PALETTE_DATA_PORT    0x3C9
 
+// Color names (to be mapped to specific RGB values)
+#define COLOR_BLACK    0x000000
+#define COLOR_BLUE     0x0000FF
+#define COLOR_GREEN    0x00FF00
+#define COLOR_CYAN     0x00FFFF
+#define COLOR_RED      0xFF0000
+#define COLOR_MAGENTA  0xFF00FF
+#define COLOR_BROWN    0xA52A2A
+#define COLOR_LIGHT_GRAY 0xD3D3D3
+#define COLOR_DARK_GRAY 0x808080
+#define COLOR_LIGHT_BLUE 0xADD8E6
+#define COLOR_LIGHT_GREEN 0x90EE90
+#define COLOR_LIGHT_CYAN 0xE0FFFF
+#define COLOR_LIGHT_RED 0xFF7F7F
+#define COLOR_LIGHT_MAGENTA 0xFF77FF
+#define COLOR_YELLOW   0xFFFF00
+#define COLOR_WHITE    0xFFFFFF
+
+// VGA memory addresses for text mode
+#define VGA_TEXT_MODE_ADDR 0xB8000
+#define KERNEL_VGA_TEXT_MODE_ADDR 0xA1000
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
-typedef struct {
-    unsigned char character;
-    unsigned char color;
-} vga_char;
+// Function to set a color in the VGA palette
+void setpall(const char *color) {
+    uint32_t color_value;
 
-volatile vga_char* vga_buffer = (volatile vga_char*) 0xB8000;
-
-int cursor_x = 0;
-int cursor_y = 0;
-
-// Объявление функции перед её использованием
-void vga_clear_screen();
-
-void vga_init() {
-    vga_clear_screen();
-}
-
-void vga_clear_screen() {
-    for (int y = 0; y < VGA_HEIGHT; y++) {
-        for (int x = 0; x < VGA_WIDTH; x++) {
-            vga_buffer[y * VGA_WIDTH + x].character = ' ';
-            vga_buffer[y * VGA_WIDTH + x].color = VGA_COLOR_BLACK;
-        }
-    }
-    cursor_x = cursor_y = 0;
-}
-
-void vga_print_char(char c, unsigned char color) {
-    if (c == '\n') {
-        cursor_x = 0;
-        cursor_y++;
+    // Map color name to actual RGB value
+    if (color == "black") {
+        color_value = COLOR_BLACK;
+    } else if (color == "blue") {
+        color_value = COLOR_BLUE;
+    } else if (color == "green") {
+        color_value = COLOR_GREEN;
+    } else if (color == "cyan") {
+        color_value = COLOR_CYAN;
+    } else if (color == "red") {
+        color_value = COLOR_RED;
+    } else if (color == "magenta") {
+        color_value = COLOR_MAGENTA;
+    } else if (color == "brown") {
+        color_value = COLOR_BROWN;
+    } else if (color == "light_gray") {
+        color_value = COLOR_LIGHT_GRAY;
+    } else if (color == "dark_gray") {
+        color_value = COLOR_DARK_GRAY;
+    } else if (color == "light_blue") {
+        color_value = COLOR_LIGHT_BLUE;
+    } else if (color == "light_green") {
+        color_value = COLOR_LIGHT_GREEN;
+    } else if (color == "light_cyan") {
+        color_value = COLOR_LIGHT_CYAN;
+    } else if (color == "light_red") {
+        color_value = COLOR_LIGHT_RED;
+    } else if (color == "light_magenta") {
+        color_value = COLOR_LIGHT_MAGENTA;
+    } else if (color == "yellow") {
+        color_value = COLOR_YELLOW;
+    } else if (color == "white") {
+        color_value = COLOR_WHITE;
     } else {
-        vga_buffer[cursor_y * VGA_WIDTH + cursor_x].character = c;
-        vga_buffer[cursor_y * VGA_WIDTH + cursor_x].color = color;
-        cursor_x++;
+        return; // Unknown color, no action taken
     }
+
+    // Set the color in the VGA palette (RGB in the format: 8-bit Red, Green, Blue)
+    // Writing to VGA palette registers
+    __asm__ volatile (
+        "mov al, %0\n"          // Move color index to AL
+        "outb %0, %1\n"         // Send color index to VGA palette index register (0x3C7)
+        "mov al, %2\n"          // Move Red component to AL
+        "outb %2, %3\n"         // Send Red component to VGA palette data register (0x3C9)
+        "mov al, %4\n"          // Move Green component to AL
+        "outb %4, %3\n"         // Send Green component to VGA palette data register (0x3C9)
+        "mov al, %5\n"          // Move Blue component to AL
+        "outb %5, %3\n"         // Send Blue component to VGA palette data register (0x3C9)
+        : 
+        : "r"(color_value >> 16), // Red component (most significant byte)
+          "r"(VGA_PALETTE_INDEX_PORT), 
+          "r"(color_value >> 8 & 0xFF), // Green component (middle byte)
+          "r"(VGA_PALETTE_DATA_PORT),
+          "r"(color_value & 0xFF)       // Blue component (least significant byte)
+        : "al"
+    );
+}
+
+// Function to print a string to the VGA text buffer
+void printv(const char *str) {
+    volatile char *vga_buffer = (char *)VGA_TEXT_MODE_ADDR;
+    int i = 0;
     
-    if (cursor_x >= VGA_WIDTH) {
-        cursor_x = 0;
-        cursor_y++;
-    }
-    
-    if (cursor_y >= VGA_HEIGHT) {
-        cursor_y = 0;
+    // Print the string to the VGA text buffer (80x25 text mode)
+    while (*str) {
+        vga_buffer[i * 2] = *str;          // Character
+        vga_buffer[i * 2 + 1] = 0x07;      // Default text color (white on black)
+        i++;
+        str++;
     }
 }
 
-void vga_print_string(const char* str, unsigned char color) {
-    while (*str) {
-        vga_print_char(*str, color);
-        str++;
+// Function to clear the screen (set all characters to spaces)
+void clear_screen() {
+    volatile char *vga_buffer = (char *)VGA_TEXT_MODE_ADDR;
+    for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
+        vga_buffer[i * 2] = ' ';         // Space character
+        vga_buffer[i * 2 + 1] = 0x07;    // Default color (white on black)
     }
 }
 
