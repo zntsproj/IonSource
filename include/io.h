@@ -1,8 +1,12 @@
 #ifndef IO_H
 #define IO_H
 
+// Custom kernel include note
+#warning "This is a kernel include! Only use in kernel-space!"
+
 #include <stdint.h>
 #include <stddef.h>
+
 // Function to read a byte from an I/O port
 static inline uint8_t inb(uint16_t port) {
     uint8_t result;
