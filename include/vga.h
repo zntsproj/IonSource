@@ -2,6 +2,7 @@
 #define VGA_H
 
 #include "io.h"
+#include <string.h> // FIX on: 2025-01-18: add strcmp
 
 // VGA registers for color palette management
 #define VGA_PALETTE_INDEX_PORT   0x3C7
@@ -27,7 +28,6 @@
 
 // VGA memory addresses for text mode
 #define VGA_TEXT_MODE_ADDR 0xB8000
-#define KERNEL_VGA_TEXT_MODE_ADDR 0xA1000
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
@@ -35,73 +35,57 @@
 void setpall(const char *color) {
     uint32_t color_value;
 
-    // Map color name to actual RGB value
-    if (color == "black") {
+    if (strcmp(color, "black") == 0) {
         color_value = COLOR_BLACK;
-    } else if (color == "blue") {
+    } else if (strcmp(color, "blue") == 0) {
         color_value = COLOR_BLUE;
-    } else if (color == "green") {
+    } else if (strcmp(color, "green") == 0) {
         color_value = COLOR_GREEN;
-    } else if (color == "cyan") {
+    } else if (strcmp(color, "cyan") == 0) {
         color_value = COLOR_CYAN;
-    } else if (color == "red") {
+    } else if (strcmp(color, "red") == 0) {
         color_value = COLOR_RED;
-    } else if (color == "magenta") {
+    } else if (strcmp(color, "magenta") == 0) {
         color_value = COLOR_MAGENTA;
-    } else if (color == "brown") {
+    } else if (strcmp(color, "brown") == 0) {
         color_value = COLOR_BROWN;
-    } else if (color == "light_gray") {
+    } else if (strcmp(color, "light_gray") == 0) {
         color_value = COLOR_LIGHT_GRAY;
-    } else if (color == "dark_gray") {
+    } else if (strcmp(color, "dark_gray") == 0) {
         color_value = COLOR_DARK_GRAY;
-    } else if (color == "light_blue") {
+    } else if (strcmp(color, "light_blue") == 0) {
         color_value = COLOR_LIGHT_BLUE;
-    } else if (color == "light_green") {
+    } else if (strcmp(color, "light_green") == 0) {
         color_value = COLOR_LIGHT_GREEN;
-    } else if (color == "light_cyan") {
+    } else if (strcmp(color, "light_cyan") == 0) {
         color_value = COLOR_LIGHT_CYAN;
-    } else if (color == "light_red") {
+    } else if (strcmp(color, "light_red") == 0) {
         color_value = COLOR_LIGHT_RED;
-    } else if (color == "light_magenta") {
+    } else if (strcmp(color, "light_magenta") == 0) {
         color_value = COLOR_LIGHT_MAGENTA;
-    } else if (color == "yellow") {
+    } else if (strcmp(color, "yellow") == 0) {
         color_value = COLOR_YELLOW;
-    } else if (color == "white") {
+    } else if (strcmp(color, "white") == 0) {
         color_value = COLOR_WHITE;
     } else {
         return; // Unknown color, no action taken
     }
 
-    // Set the color in the VGA palette (RGB in the format: 8-bit Red, Green, Blue)
-    // Writing to VGA palette registers
-    __asm__ volatile (
-        "mov al, %0\n"          // Move color index to AL
-        "outb %0, %1\n"         // Send color index to VGA palette index register (0x3C7)
-        "mov al, %2\n"          // Move Red component to AL
-        "outb %2, %3\n"         // Send Red component to VGA palette data register (0x3C9)
-        "mov al, %4\n"          // Move Green component to AL
-        "outb %4, %3\n"         // Send Green component to VGA palette data register (0x3C9)
-        "mov al, %5\n"          // Move Blue component to AL
-        "outb %5, %3\n"         // Send Blue component to VGA palette data register (0x3C9)
-        : 
-        : "r"(color_value >> 16), // Red component (most significant byte)
-          "r"(VGA_PALETTE_INDEX_PORT), 
-          "r"(color_value >> 8 & 0xFF), // Green component (middle byte)
-          "r"(VGA_PALETTE_DATA_PORT),
-          "r"(color_value & 0xFF)       // Blue component (least significant byte)
-        : "al"
-    );
+    // Set the color in the VGA palette using I/O operations
+    outb(VGA_PALETTE_INDEX_PORT, (color_value >> 16) & 0xFF);  // Send the index (R)
+    outb(VGA_PALETTE_DATA_PORT, (color_value >> 8) & 0xFF);    // Send the data (G)
+    outb(VGA_PALETTE_DATA_PORT, color_value & 0xFF);           // Send the data (B)
+    outb(VGA_PALETTE_DATA_PORT, color_value & 0xFF);           // Repeat the data (for internal register setup)
 }
 
 // Function to print a string to the VGA text buffer
 void printv(const char *str) {
     volatile char *vga_buffer = (char *)VGA_TEXT_MODE_ADDR;
     int i = 0;
-    
-    // Print the string to the VGA text buffer (80x25 text mode)
-    while (*str) {
-        vga_buffer[i * 2] = *str;          // Character
-        vga_buffer[i * 2 + 1] = 0x07;      // Default text color (white on black)
+
+    while (*str && i < VGA_WIDTH * VGA_HEIGHT) {
+        vga_buffer[i * 2] = *str;      // Character
+        vga_buffer[i * 2 + 1] = 0x07; // Default text color (white on black)
         i++;
         str++;
     }
