@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stddef.h>
-#include "kernel.h"
+#include "kernel.h" // -I/your/path/to/ionincludes
 
 #define RFCOMM_DEFAULT_FREQUENCY 9600  // default
 #define RFCOMM_MAX_CHANNELS 30         // maximum channels
@@ -82,7 +82,7 @@ static inline void rfcomm_get_channel_info(int channel_id) {
         return;
     }
 
-    printk("RFCOMM channel %d is active at %u band\n", channel_id, channel->frequency);
+    printk("RFCOMM channel %d is active at %u baud\n", channel_id, channel->frequency);
 }
 
 #endif // BLUETOOTH_RFCOMM_H

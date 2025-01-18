@@ -40,20 +40,20 @@ static inline void wran_dev_start(struct wran_dev *dev) {
     printf("WRAN device started in RX mode\n");
 }
 
-int main() {
-    struct wran_dev wran_device;
+int wran_main() {
+    struct wran_dev my_wran_dev;
 
-    wran_dev_init(&wran_device, 12345, 700e6);
-    wran_dev_add_station(&wran_device, 1, 0xAABBCCDD);
+    wran_dev_init(&my_wran_dev, 12345, 700e6);
+    wran_dev_add_station(&my_wran_dev, 1, 0xAABBCCDD);
 
     uint8_t data[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB};
-    wran_dev_send_data(&wran_device, 1, 2, data, sizeof(data));
+    wran_dev_send_data(&my_wran_dev, 1, 2, data, sizeof(data));
 
     uint8_t buffer[2048];
-    wran_dev_receive_data(&wran_device, buffer, sizeof(buffer));
+    wran_dev_receive_data(&my_wran_dev, buffer, sizeof(buffer));
 
-    wran_dev_start(&wran_device);
-    wran_dev_rf_irq_handler(&wran_device.rf_device);
+    wran_dev_start(&my_wran_dev);
+    wran_dev_rf_irq_handler(&my_wran_dev.rf_device);
 
     return 0;
 }

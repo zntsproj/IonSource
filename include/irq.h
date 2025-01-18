@@ -74,7 +74,7 @@ static inline void irq_enable(unsigned int irq) {
         return;
     }
 
-    // Use I/O port to enable interrupt (example for PIC with 0x21 port)
+    // Use I/O port to enable interrupt (PIC with 0x21 port)
     unsigned char mask = inb(0x21);
     mask &= ~(0x01 << irq);  // Clear the bit to enable the IRQ
     outb(0x21, mask);
@@ -89,7 +89,7 @@ static inline void irq_disable(unsigned int irq) {
         return;
     }
 
-    // Use I/O port to disable interrupt (example for PIC with 0x21 port)
+    // Use I/O port to disable interrupt (PIC with 0x21 port)
     unsigned char mask = inb(0x21);
     mask |= (0x01 << irq);  // Set the bit to disable the IRQ
     outb(0x21, mask);

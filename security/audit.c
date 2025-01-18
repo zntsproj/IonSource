@@ -4,8 +4,6 @@
 #include <time.h> // Add the necessary include for time()
 #include "ring_buffer.h"
 
-// Include this file into kernel.c
-
 // Size of the audit event buffer
 #define MAX_AUDIT_EVENTS 100
 #define EVENT_MAX_LEN  256

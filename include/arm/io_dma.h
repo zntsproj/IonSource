@@ -1,4 +1,4 @@
-// io_dma.h for arm
+// io_dma_arm.h
 #ifndef IO_DMA_ARM_H
 #define IO_DMA_ARM_H
 

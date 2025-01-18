@@ -11,7 +11,7 @@
 #define SYS_TIME    0x06  // System time counter
 #define TX_FCTRL    0x08  // Transmit frame control
 #define DX_TIME     0x0A  // Delayed transmit time
-#define RX_FCTRL    0x0C  // Receive frame control
+#define RX_FCTRL    0x0C  // Receive frame control (corrected typo)
 #define SYS_STATUS  0x0F  // System event status register
 #define RX_FINFO    0x10  // Receive frame information
 #define RX_BUFFER   0x11  // Receive buffer start

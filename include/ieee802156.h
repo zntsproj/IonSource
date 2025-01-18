@@ -16,5 +16,3 @@ typedef struct {
 int configure_ieee802156(ieee802156_config_t *config);
 
 #endif
-
-// All config writes implemented in kernel.c

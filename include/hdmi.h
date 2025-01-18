@@ -1,6 +1,3 @@
-// hdmi.h
-// For HDMI drivers.
-
 #ifndef HDMI_H
 #define HDMI_H
 
@@ -26,7 +23,7 @@ void hdmi_enable_output(struct hdmi_device *dev);
 // Function to disable HDMI output
 void hdmi_disable_output(struct hdmi_device *dev);
 
-// Function to handle HDMI interrupts
+// Function to handle HDMI interrupts (if necessary)
 void hdmi_irq_handler(void *data);
 
 #endif // HDMI_H

@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "block_io.h" 
+#include "block_io.h"  // Подключаем header файл с операциями с блоками
 
 #define SUPERBLOCK_MAGIC 0xA1B2C3D4
 
